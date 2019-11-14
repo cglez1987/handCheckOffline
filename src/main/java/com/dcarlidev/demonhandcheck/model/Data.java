@@ -6,7 +6,9 @@
 package com.dcarlidev.demonhandcheck.model;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
+import javafx.scene.shape.VertexFormat;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 
@@ -30,10 +32,14 @@ public class Data {
         return obj.toJSONString();
     }
 
-    public String findValueInJsonObject(String json, String key) throws ParseException {
+    public Map<String, String> getPropertiesFromJsonObject(String json) throws ParseException {
         JSONObject obj = (JSONObject) parser.parse(json);
-        if (obj.containsKey(key)) {
-            return obj.get(key).toString();
+        Map<String, String> properties = new HashMap();
+        if (!obj.isEmpty()) {
+            obj.keySet().forEach(key -> {
+                properties.put(key.toString(), obj.get(key.toString()).toString());
+            });
+            return properties;
         } else {
             return null;
         }

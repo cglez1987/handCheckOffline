@@ -9,9 +9,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -92,6 +97,10 @@ public class CryptoUtil {
         InputStream in = new FileInputStream(new File(path));
         ks.load(in, password.toCharArray());
         return (SecretKey) ks.getKey("secretKey", password.toCharArray());
+    }
+
+    public void saveEncryptPasswordLocally(String password, String path) throws IOException {
+        Files.write(Paths.get(path), password.getBytes(), StandardOpenOption.CREATE);
     }
 
 }

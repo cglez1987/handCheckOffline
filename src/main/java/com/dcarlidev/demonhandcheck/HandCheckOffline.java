@@ -8,6 +8,7 @@ package com.dcarlidev.demonhandcheck;
 import com.dcarlidev.demonhandcheck.model.Data;
 import com.dcarlidev.demonhandcheck.utils.CryptoUtil;
 import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.nio.file.Files;
@@ -27,9 +28,11 @@ import javafx.util.converter.LocalDateTimeStringConverter;
  */
 public class HandCheckOffline {
 
-    private static final String LICENCEFILENAME = "lstmp";
+    private static final String LICENCEFILENAME = "lstmp.lc";
 
-    private static final String KEYSTOREFILENAME = "keystore";
+    private static final String KEYSTOREFILENAME = "keystore.ks";
+
+    private static final String PASSWORDFILENAME = "pss.en";
 
     private final Data data;
     private final CryptoUtil cryptoUtil;
@@ -76,28 +79,31 @@ public class HandCheckOffline {
 
     }
 
-    public boolean validateLicence(String password) {
+    public boolean validateLicence() throws Exception {
         String systemLocation = HandCheckOffline.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String parentLocation = new File(systemLocation).getParent();
         String licenceFile = parentLocation + File.separator + LICENCEFILENAME;
         String keystoreFile = parentLocation + File.separator + KEYSTOREFILENAME;
+        String passwordFile = parentLocation + File.separator + PASSWORDFILENAME;
         if (Files.exists(Paths.get(licenceFile), LinkOption.NOFOLLOW_LINKS) && Files.exists(Paths.get(keystoreFile), LinkOption.NOFOLLOW_LINKS)) {
+            byte[] encryptPassword = Files.readAllBytes(Paths.get(passwordFile));
+            String password = new String(Base64.getDecoder().decode(encryptPassword));
             //validateLicenceLocalVsDate();
-            return true;
         } else {
-            getLicenceDataFromServer();
-           // createOfflineLicenceFileVerification();
-            return false;
+            createOfflineLicenceFileVerification(licenceFile, keystoreFile, passwordFile);
         }
+        return true;
     }
 
     private Map<String, String> getLicenceDataFromServer() {
         return new HashMap<>();
     }
 
-    private void createOfflineLicenceFileVerification(String licenceFilePath, String keystorePath) throws Exception {
+    private void createOfflineLicenceFileVerification(String licenceFilePath, String keystorePath, String passwordFilePath) throws Exception {
         Map<String, String> properties = getLicenceDataFromServer();
-        String password = new String(Base64.getDecoder().decode(properties.get("encryptedPassword")));
+        String encryptPass = properties.get("encryptedPassword");
+        cryptoUtil.saveEncryptPasswordLocally(encryptPass, passwordFilePath);
+        String password = new String(Base64.getDecoder().decode(encryptPass));
         properties.remove("encryptedPassword");
         String jsonData = data.createDataJson(properties);
         System.out.println("Creating the licence file and keystore file for first time");
@@ -106,9 +112,10 @@ public class HandCheckOffline {
 
     private void validateLicenceLocalVsDate(String filePath, String password, String keyStorePath) throws Exception {
         String jsonData = cryptoUtil.decriptFile(filePath, password, keyStorePath);
-        String lastOpenDate = data.findValueInJsonObject(jsonData, "lastOpenDate");
-        String dueLicenceDate = data.findValueInJsonObject(jsonData, "dueLicenceDate");
-        String company = data.findValueInJsonObject(jsonData, "company");
+        Map<String, String> prop = data.getPropertiesFromJsonObject(jsonData);
+        String lastOpenDate = prop.get("lastOpenDate");
+        String dueLicenceDate = prop.get("dueLicenceDate");
+        String company = prop.get("company");
         if (lastOpenDate != null && dueLicenceDate != null) {
             LocalDateTime lastOpenDateSaved = LocalDateTime.parse(lastOpenDate);
             LocalDateTime dueLicenceDateSaved = LocalDateTime.parse(dueLicenceDate);
