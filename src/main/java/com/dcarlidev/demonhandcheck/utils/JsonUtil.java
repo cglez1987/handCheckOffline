@@ -3,12 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.dcarlidev.demonhandcheck.model;
+package com.dcarlidev.demonhandcheck.utils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import javafx.scene.shape.VertexFormat;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 
@@ -16,7 +15,7 @@ import org.json.simple.parser.*;
  *
  * @author carlos
  */
-public class Data {
+public class JsonUtil {
 
     private final JSONParser parser = new JSONParser();
 
