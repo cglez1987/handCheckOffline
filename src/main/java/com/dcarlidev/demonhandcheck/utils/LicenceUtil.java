@@ -6,14 +6,20 @@
 package com.dcarlidev.demonhandcheck.utils;
 
 import com.dcarlidev.demonhandcheck.HandCheckOffline;
+import com.dcarlidev.demonhandcheck.models.LicenceData;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Date;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.Response;
 
 /**
  *
@@ -26,13 +32,15 @@ public class LicenceUtil {
     private static final String KEYSTOREFILENAME = "keystore.ks";
 
     private static final String PASSWORDFILENAME = "pss.en";
+    
+    private static final String URLHANDLERONLINE = "http://localhost:8080";
+    
+    private static final String IDCOMPANY = "company1";
 
-    private final JsonUtil jsonUtil;
     private final CryptoUtil cryptoUtil;
 
     public LicenceUtil() throws Exception {
         cryptoUtil = new CryptoUtil();
-        jsonUtil = new JsonUtil();
     }
 
     public void validateLicence() throws Exception {
@@ -46,47 +54,59 @@ public class LicenceUtil {
             String password = new String(Base64.getDecoder().decode(encryptPassword));
             validateLicenceLocalVsDate(licenceFile, password, keystoreFile);
         } else {
-            createOfflineLicenceFileVerification(licenceFile, keystoreFile, passwordFile);
+            createOfflineLicenceFile(licenceFile, keystoreFile, passwordFile);
         }
     }
 
-    private Map<String, String> getLicenceDataFromServer() {
-        return new HashMap<>();
+    private LicenceData getLicenceDataFromServer() throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Client client = ClientBuilder.newClient();
+        Response response = client.target(URLHANDLERONLINE + "/citas/licence").path("/" + IDCOMPANY).request().get();
+        LicenceData licenceData = mapper.readValue(response.readEntity(String.class), LicenceData.class);
+        return licenceData;
     }
 
-    private void createOfflineLicenceFileVerification(String licenceFilePath, String keystorePath, String passwordFilePath) throws Exception {
-        Map<String, String> properties = getLicenceDataFromServer();
-        String encryptPass = properties.get("encryptedPassword");
+    private void createOfflineLicenceFile(String licenceFilePath, String keystorePath, String passwordFilePath) throws Exception {
+        LicenceData licenceData = getLicenceDataFromServer();
+        ObjectMapper mapper = new ObjectMapper();
+        String encryptPass = licenceData.getEncryptedPassword();
         cryptoUtil.saveEncryptPasswordLocally(encryptPass, passwordFilePath);
         String password = new String(Base64.getDecoder().decode(encryptPass));
-        properties.remove("encryptedPassword");
-        String jsonData = jsonUtil.createDataJson(properties);
+        String jsonData = mapper.writeValueAsString(licenceData);
         System.out.println("Creating the licence file and keystore file for first time");
         cryptoUtil.encriptFile(jsonData, licenceFilePath, password, keystorePath);
     }
 
     private void validateLicenceLocalVsDate(String filePath, String password, String keyStorePath) throws Exception {
         String jsonData = cryptoUtil.decriptFile(filePath, password, keyStorePath);
-        Map<String, String> prop = jsonUtil.getPropertiesFromJsonObject(jsonData);
-        String lastOpenDate = prop.get("lastOpenDate");
-        String dueLicenceDate = prop.get("dueLicenceDate");
-        String company = prop.get("company");
+        ObjectMapper mapper = new ObjectMapper();
+        LicenceData licenceData = mapper.readValue(jsonData, LicenceData.class);
+        Date lastOpenDate = licenceData.getLastOpenDate();
+        Date dueLicenceDate = licenceData.getDueLicenceDate();
         if (lastOpenDate != null && dueLicenceDate != null) {
-            LocalDateTime lastOpenDateSaved = LocalDateTime.parse(lastOpenDate);
-            LocalDateTime dueLicenceDateSaved = LocalDateTime.parse(dueLicenceDate);
+            LocalDateTime lastOpenDateSaved = lastOpenDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            LocalDateTime dueLicenceDateSaved = dueLicenceDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
             LocalDateTime actualSystemDate = LocalDateTime.now();
             if (lastOpenDateSaved.isAfter(actualSystemDate)) {
                 System.out.println("There was a tricky in the system.....");
-                throw new Exception("System Date is less than the LAST OPEN DATE");
+                throw new Exception("System Date (" + actualSystemDate + ") is less than the LAST OPEN DATE (" + lastOpenDate + ")");
             } else {
                 System.out.println("The dates are ok.....");
                 if (dueLicenceDateSaved.isAfter(actualSystemDate)) {
-
+                    throw new Exception("Licence has expired!");
                 }
             }
         } else {
             throw new Exception("LAST OPEN DATE is null in local encrypted file");
         }
+    }
+
+    public boolean updateDueLicenceDateInFile(Date actualDueLicenceDate) {
+        return true;
+    }
+
+    public boolean updateLastOpenDateInFile(Date actualDueLicenceDate) {
+        return true;
     }
 
 }

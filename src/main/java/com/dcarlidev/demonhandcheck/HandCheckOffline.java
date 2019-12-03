@@ -5,10 +5,6 @@
  */
 package com.dcarlidev.demonhandcheck;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -20,11 +16,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class HandCheckOffline {
 
     public static void main(String... args) throws Exception {
-        System.out.println("Date: " + LocalDateTime.now());
-        System.out.println("Date1: " + LocalDateTime.parse(LocalDateTime.now().toString()));
-        NetworkInterface net = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
-        System.out.println("Mac: " + Arrays.toString(net.getHardwareAddress()));
         SpringApplication.run(HandCheckOffline.class, args);
+//        System.out.println("Date: " + LocalDateTime.now());
+//        System.out.println("Date1: " + LocalDateTime.parse(LocalDateTime.now().toString()));
+//        NetworkInterface net = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+//        System.out.println("Mac: " + Arrays.toString(net.getHardwareAddress()));
+
 //        CryptoUtil u;
 //        JsonUtil d = new JsonUtil();
 //
@@ -53,7 +50,6 @@ public class HandCheckOffline {
 //        } catch (Exception ex) {
 //            Logger.getLogger(HandCheckOffline.class.getName()).log(Level.SEVERE, null, ex);
 //        }
-
     }
 
 }

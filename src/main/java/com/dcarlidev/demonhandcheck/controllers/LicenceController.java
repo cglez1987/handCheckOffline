@@ -20,7 +20,7 @@ public class LicenceController {
     @RequestMapping(path = "/validate")
     @GetMapping
     public void validateLicence() {
-
+        
     }
 
 }
