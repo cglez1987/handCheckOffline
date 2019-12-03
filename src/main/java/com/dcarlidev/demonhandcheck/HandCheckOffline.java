@@ -5,23 +5,36 @@
  */
 package com.dcarlidev.demonhandcheck;
 
+import com.dcarlidev.demonhandcheck.services.CompanyService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.PropertySource;
 
 /**
  *
  * @author carlos
  */
 @SpringBootApplication
-public class HandCheckOffline {
+@PropertySource({"application.properties"})
+public class HandCheckOffline implements CommandLineRunner {
+
+    @Autowired
+    private CompanyService service;
 
     public static void main(String... args) throws Exception {
         SpringApplication.run(HandCheckOffline.class, args);
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+
+        System.out.println("Company: " + service.getByCompanyId("company1").getName());
 //        System.out.println("Date: " + LocalDateTime.now());
 //        System.out.println("Date1: " + LocalDateTime.parse(LocalDateTime.now().toString()));
 //        NetworkInterface net = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
 //        System.out.println("Mac: " + Arrays.toString(net.getHardwareAddress()));
-
 //        CryptoUtil u;
 //        JsonUtil d = new JsonUtil();
 //

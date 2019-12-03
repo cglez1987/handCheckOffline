@@ -20,6 +20,7 @@ import java.util.Date;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Response;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  *
@@ -32,10 +33,9 @@ public class LicenceUtil {
     private static final String KEYSTOREFILENAME = "keystore.ks";
 
     private static final String PASSWORDFILENAME = "pss.en";
-    
-    private static final String URLHANDLERONLINE = "http://localhost:8080";
-    
-    private static final String IDCOMPANY = "company1";
+
+    @Value("${handcheck.url}")
+    private static String URLHANDLERONLINE;
 
     private final CryptoUtil cryptoUtil;
 
@@ -43,7 +43,7 @@ public class LicenceUtil {
         cryptoUtil = new CryptoUtil();
     }
 
-    public void validateLicence() throws Exception {
+    public void validateLicence(String idCompany) throws Exception {
         String systemLocation = HandCheckOffline.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String parentLocation = new File(systemLocation).getParent();
         String licenceFile = parentLocation + File.separator + LICENCEFILENAME;
@@ -54,20 +54,20 @@ public class LicenceUtil {
             String password = new String(Base64.getDecoder().decode(encryptPassword));
             validateLicenceLocalVsDate(licenceFile, password, keystoreFile);
         } else {
-            createOfflineLicenceFile(licenceFile, keystoreFile, passwordFile);
+            createOfflineLicenceFile(idCompany, licenceFile, keystoreFile, passwordFile);
         }
     }
 
-    private LicenceData getLicenceDataFromServer() throws JsonProcessingException {
+    public LicenceData getLicenceDataFromServer(String idCompany) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         Client client = ClientBuilder.newClient();
-        Response response = client.target(URLHANDLERONLINE + "/citas/licence").path("/" + IDCOMPANY).request().get();
+        Response response = client.target(URLHANDLERONLINE + "/citas/licence").path("/" + idCompany).request().get();
         LicenceData licenceData = mapper.readValue(response.readEntity(String.class), LicenceData.class);
         return licenceData;
     }
 
-    private void createOfflineLicenceFile(String licenceFilePath, String keystorePath, String passwordFilePath) throws Exception {
-        LicenceData licenceData = getLicenceDataFromServer();
+    private void createOfflineLicenceFile(String idCompany, String licenceFilePath, String keystorePath, String passwordFilePath) throws Exception {
+        LicenceData licenceData = getLicenceDataFromServer(idCompany);
         ObjectMapper mapper = new ObjectMapper();
         String encryptPass = licenceData.getEncryptedPassword();
         cryptoUtil.saveEncryptPasswordLocally(encryptPass, passwordFilePath);
